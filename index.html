@@ -748,58 +748,19 @@ function sendRows(rows) {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Mengirim...';
 
-  // Gunakan no-cors + form trick agar tidak diblokir browser
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = SCRIPT_URL;
-  form.target = 'hidden-iframe';
-  form.style.display = 'none';
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'payload';
-  input.value = JSON.stringify({ action: 'addPO', rows });
-  form.appendChild(input);
-  document.body.appendChild(form);
-
-  let iframe = document.getElementById('hidden-iframe');
-  if (!iframe) {
-    iframe = document.createElement('iframe');
-    iframe.name = 'hidden-iframe';
-    iframe.id = 'hidden-iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-  }
-
-  iframe.onload = () => {
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({ action: 'addPO', rows })
+  })
+  .then(() => {
     showToast('✓ ' + rows.length + ' produk berhasil dikirim!', 'ok');
     allPO = allPO.concat(rows);
     resetForm();
-    btn.disabled = false;
-    btn.textContent = 'Kirim Order →';
-    document.body.removeChild(form);
-  };
-
-  // Timeout fallback 8 detik
-  const timeout = setTimeout(() => {
-    showToast('✓ Order terkirim!', 'ok');
-    allPO = allPO.concat(rows);
-    resetForm();
-    btn.disabled = false;
-    btn.textContent = 'Kirim Order →';
-    try { document.body.removeChild(form); } catch(e) {}
-  }, 8000);
-
-  iframe.onload = () => {
-    clearTimeout(timeout);
-    showToast('✓ ' + rows.length + ' produk berhasil dikirim!', 'ok');
-    allPO = allPO.concat(rows);
-    resetForm();
-    btn.disabled = false;
-    btn.textContent = 'Kirim Order →';
-    try { document.body.removeChild(form); } catch(e) {}
-  };
-
-  form.submit();
+  })
+  .catch(() => showToast('Gagal kirim, cek koneksi', 'err'))
+  .finally(() => { btn.disabled = false; btn.textContent = 'Kirim Order →'; });
 }
 
 function resetForm() {
@@ -1003,26 +964,18 @@ function toggleStokEdit(i) {
 function saveStok(i, nama) {
   const qty = document.getElementById('stok-val-'+i).value;
 
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = SCRIPT_URL;
-  form.target = 'hidden-iframe';
-  form.style.display = 'none';
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'payload';
-  input.value = JSON.stringify({ action: 'updateStok', nama, qty: parseInt(qty) });
-  form.appendChild(input);
-  document.body.appendChild(form);
-
-  setTimeout(() => {
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify({ action: 'updateStok', nama, qty: parseInt(qty) })
+  })
+  .then(() => {
     allStok[i].qty = parseInt(qty);
     renderStok();
     showToast('Stok diperbarui', 'ok');
-    try { document.body.removeChild(form); } catch(e) {}
-  }, 4000);
-
-  form.submit();
+  })
+  .catch(() => showToast('Gagal simpan stok', 'err'));
 }
 
 // INIT
