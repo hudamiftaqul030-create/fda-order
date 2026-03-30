@@ -748,19 +748,23 @@ function sendRows(rows) {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = 'Mengirim...';
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-    body: JSON.stringify({ action: 'addPO', rows })
-  })
-  .then(() => {
-    showToast('✓ ' + rows.length + ' produk berhasil dikirim!', 'ok');
-    allPO = allPO.concat(rows);
-    resetForm();
-  })
-  .catch(() => showToast('Gagal kirim, cek koneksi', 'err'))
-  .finally(() => { btn.disabled = false; btn.textContent = 'Kirim Order →'; });
+  const url = SCRIPT_URL + '?action=addPO&data=' + encodeURIComponent(JSON.stringify(rows));
+
+  fetch(url, { method: 'GET', redirect: 'follow' })
+    .then(r => r.text())
+    .then(text => {
+      let res = {};
+      try { res = JSON.parse(text); } catch(e) {}
+      if (res.status === 'ok') {
+        showToast('✓ ' + rows.length + ' produk berhasil dikirim!', 'ok');
+        allPO = allPO.concat(rows);
+        resetForm();
+      } else {
+        showToast('Gagal: ' + (res.message || 'coba lagi'), 'err');
+      }
+    })
+    .catch(err => showToast('Gagal kirim: ' + err.message, 'err'))
+    .finally(() => { btn.disabled = false; btn.textContent = 'Kirim Order →'; });
 }
 
 function resetForm() {
@@ -964,18 +968,21 @@ function toggleStokEdit(i) {
 function saveStok(i, nama) {
   const qty = document.getElementById('stok-val-'+i).value;
 
-  fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-    body: JSON.stringify({ action: 'updateStok', nama, qty: parseInt(qty) })
-  })
-  .then(() => {
-    allStok[i].qty = parseInt(qty);
-    renderStok();
-    showToast('Stok diperbarui', 'ok');
-  })
-  .catch(() => showToast('Gagal simpan stok', 'err'));
+  const url = SCRIPT_URL + '?action=updateStok&nama=' + encodeURIComponent(nama) + '&qty=' + parseInt(qty);
+  fetch(url, { method: 'GET', redirect: 'follow' })
+    .then(r => r.text())
+    .then(text => {
+      let res = {};
+      try { res = JSON.parse(text); } catch(e) {}
+      if (res.status === 'ok') {
+        allStok[i].qty = parseInt(qty);
+        renderStok();
+        showToast('Stok diperbarui', 'ok');
+      } else {
+        showToast('Gagal simpan stok', 'err');
+      }
+    })
+    .catch(() => showToast('Gagal simpan stok', 'err'));
 }
 
 // INIT
